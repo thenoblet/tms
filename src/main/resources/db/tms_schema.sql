@@ -1,9 +1,3 @@
--- Create the database (run this separately if needed)
--- CREATE DATABASE taskdb;
-
--- Connect to the database if not already connected
--- \c taskdb
-
 -- Enable UUID extension if you want to use UUIDs instead of BIGINT for IDs
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
