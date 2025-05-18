@@ -11,10 +11,10 @@ import java.util.List;
 public interface TaskService {
     /**
      * Creates a new task in the system.
+     *
      * @param task The task to create.
-     * @return The newly created task with generated ID.
      */
-    Task createTask(Task task);
+    void createTask(Task task);
 
     /**
      * Retrieves a task by its ID.
