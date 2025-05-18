@@ -1,6 +1,6 @@
 <%--
   Created by IntelliJ IDEA.
-  User: appia
+  User: appiah
   Date: 17/05/2025
   Time: 16:34
   To change this template use File | Settings | File Templates.
@@ -51,6 +51,7 @@
     </div>
 </nav>
 <div class="container mt-4 flex-grow-1">
+
 <!-- Display flash messages/alerts if any -->
 <c:if test="${not empty message}">
     <div class="alert alert-${messageType} alert-dismissible fade show" role="alert">

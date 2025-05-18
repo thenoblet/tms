@@ -88,7 +88,7 @@
                     </a>
                     <a href="#" class="dropdown-item delete"
                        data-task-id="${task.id}"
-                       data-task-title="${fn:escapeXml(task.title)}')">
+                       data-task-title="${fn:escapeXml(task.title)}">
                       <i class="fas fa-trash"></i> Delete Task
                     </a>
                   </div>

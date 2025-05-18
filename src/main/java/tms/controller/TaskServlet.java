@@ -201,7 +201,6 @@ public class TaskServlet extends HttpServlet {
         task.setPriority(request.getParameter("priority"));
         task.setStatus(Task.Status.valueOf(request.getParameter("status")));
 
-        // Handle tags - split comma-separated string into list
         String tagsParam = request.getParameter("tags");
         if (tagsParam != null && !tagsParam.isEmpty()) {
             task.setTags(List.of(tagsParam.split("\\s*,\\s*")));

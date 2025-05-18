@@ -6,7 +6,6 @@ import tms.util.DatabaseConnection;
 
 import java.sql.*;
 import java.util.*;
-import java.util.Date;
 
 public class TaskDAOImpl implements TaskDAO {
 
