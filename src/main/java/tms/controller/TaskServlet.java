@@ -12,25 +12,41 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import tms.model.Task;
 import tms.service.TaskService;
 import tms.service.TaskServiceImpl;
 
-
+/**
+ * Servlet controller for managing task operations in the Task Management System.
+ * Handles all CRUD operations for tasks including listing, creating, updating,
+ * deleting, filtering and sorting tasks.
+ */
 @WebServlet(name = "TaskServlet", urlPatterns = {"/tasks", "/tasks/*"})
 public class TaskServlet extends HttpServlet {
     private TaskService taskService;
     private SimpleDateFormat dateFormatter;
 
+    /**
+     * Initializes the servlet and its dependencies.
+     * @throws ServletException if initialization fails
+     */
     @Override
     public void init() throws ServletException {
         taskService = new TaskServiceImpl();
         dateFormatter = new SimpleDateFormat("yyyy-MM-dd");
     }
 
+    /**
+     * Handles HTTP GET requests for task operations.
+     * @param request the HttpServletRequest object
+     * @param response the HttpServletResponse object
+     * @throws ServletException if a servlet-specific error occurs
+     * @throws IOException if an I/O error occurs
+     */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
-        throws ServletException, IOException {
+            throws ServletException, IOException {
 
         String action = request.getParameter("action");
 
@@ -58,12 +74,17 @@ public class TaskServlet extends HttpServlet {
                 default:
                     listTasks(request, response);
             }
-
         } catch (Exception ex) {
             throw new ServletException(ex);
         }
     }
 
+    /**
+     * Handles HTTP POST requests for task operations.
+     * @param request the HttpServletRequest object
+     * @param response the HttpServletResponse object
+     * @throws ServletException if a servlet-specific error occurs
+     */
     @Override
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException {
         String action = request.getParameter("action");
@@ -88,7 +109,15 @@ public class TaskServlet extends HttpServlet {
         }
     }
 
-    public void listTasks(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    /**
+     * Displays the list of all tasks.
+     * @param request the HttpServletRequest object
+     * @param response the HttpServletResponse object
+     * @throws ServletException if a servlet-specific error occurs
+     * @throws IOException if an I/O error occurs
+     */
+    public void listTasks(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
         List<Task> tasks = taskService.getAllTasks();
         request.setAttribute("tasks", tasks);
 
@@ -96,12 +125,26 @@ public class TaskServlet extends HttpServlet {
         dispatcher.forward(request, response);
     }
 
-    public void showNewForm(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    /**
+     * Shows the form for creating a new task.
+     * @param request the HttpServletRequest object
+     * @param response the HttpServletResponse object
+     * @throws ServletException if a servlet-specific error occurs
+     * @throws IOException if an I/O error occurs
+     */
+    public void showNewForm(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
         RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/jsp/task/form.jsp");
-
         dispatcher.forward(request, response);
     }
 
+    /**
+     * Shows the form for editing an existing task.
+     * @param request the HttpServletRequest object
+     * @param response the HttpServletResponse object
+     * @throws ServletException if a servlet-specific error occurs
+     * @throws IOException if an I/O error occurs
+     */
     public void showEditForm(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         try {
@@ -111,7 +154,6 @@ public class TaskServlet extends HttpServlet {
             if (task != null) {
                 request.setAttribute("task", task);
 
-                // Add comma-separated tags string for easier form handling
                 if (task.getTags() != null && !task.getTags().isEmpty()) {
                     String tagsString = String.join(",", task.getTags());
                     request.setAttribute("tagsString", tagsString);
@@ -120,68 +162,89 @@ public class TaskServlet extends HttpServlet {
                 RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/jsp/task/form.jsp");
                 dispatcher.forward(request, response);
             } else {
-                // Task not found, redirect to list
                 response.sendRedirect("tasks");
             }
         } catch (NumberFormatException e) {
-            // Invalid ID format
             response.sendRedirect("tasks");
         }
     }
-    public void showTask(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        Long id = Long.parseLong(request.getParameter("id"));
-        Task task = taskService.getTask(id);
-        request.setAttribute("task", task);
 
-        RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/jsp/task/view.jsp");
-        dispatcher.forward(request, response);
-    }
-
-    public void createTask(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    /**
+     * Creates a new task based on form submission.
+     * @param request the HttpServletRequest object
+     * @param response the HttpServletResponse object
+     * @throws ServletException if a servlet-specific error occurs
+     * @throws IOException if an I/O error occurs
+     */
+    public void createTask(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
         Task newTask = new Task();
         taskService.createTask(mapParamToTask(newTask, request));
-
         response.sendRedirect("tasks");
     }
 
-    public void deleteTask(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    /**
+     * Deletes an existing task.
+     * @param request the HttpServletRequest object
+     * @param response the HttpServletResponse object
+     * @throws ServletException if a servlet-specific error occurs
+     * @throws IOException if an I/O error occurs
+     */
+    public void deleteTask(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
         Long id = Long.parseLong(request.getParameter("id"));
         taskService.deleteTask(id);
-
         response.sendRedirect("tasks");
     }
 
-    public void updateTask(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    /**
+     * Updates an existing task.
+     * @param request the HttpServletRequest object
+     * @param response the HttpServletResponse object
+     * @throws ServletException if a servlet-specific error occurs
+     * @throws IOException if an I/O error occurs
+     */
+    public void updateTask(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
         Long id = Long.parseLong(request.getParameter("id"));
         Task task = taskService.getTask(id);
-
         taskService.updateTask(mapParamToTask(task, request));
         response.sendRedirect("tasks");
-
     }
 
-
-    public void filterTasks(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    /**
+     * Filters tasks by status.
+     * @param request the HttpServletRequest object
+     * @param response the HttpServletResponse object
+     * @throws ServletException if a servlet-specific error occurs
+     * @throws IOException if an I/O error occurs
+     */
+    public void filterTasks(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
         Task.Status status = Task.Status.valueOf(request.getParameter("status"));
         List<Task> tasks = taskService.getTasksByStatus(status);
-
         request.setAttribute("tasks", tasks);
-        RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/jsp/task/list.jsp");
 
+        RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/jsp/task/list.jsp");
         dispatcher.forward(request, response);
     }
 
+    /**
+     * Sorts tasks by due date in ascending or descending order.
+     * @param request the HttpServletRequest object
+     * @param response the HttpServletResponse object
+     * @throws ServletException if a servlet-specific error occurs
+     * @throws IOException if an I/O error occurs
+     */
     public void sortTasks(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         try {
             boolean ascending = "asc".equalsIgnoreCase(request.getParameter("order"));
             List<Task> tasks = taskService.getAllTasksSortedByDueDate(ascending);
 
-            // Set both attributes to ensure compatibility
             request.setAttribute("tasks", tasks);
             request.setAttribute("sortedTasks", tasks);
 
-            // Forward to the correct view (dashboard.jsp instead of list.jsp)
             RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/jsp/task/list.jsp");
             dispatcher.forward(request, response);
         } catch (Exception e) {
@@ -189,6 +252,12 @@ public class TaskServlet extends HttpServlet {
         }
     }
 
+    /**
+     * Maps request parameters to a Task object.
+     * @param task the Task object to populate
+     * @param request the HttpServletRequest containing parameters
+     * @return the populated Task object
+     */
     private Task mapParamToTask(Task task, HttpServletRequest request) {
         String idParam = request.getParameter("id");
         if (idParam != null && !idParam.isEmpty()) {
