@@ -5,7 +5,7 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)
 ![Tomcat](https://img.shields.io/badge/apache%20tomcat-%23F8DC75.svg?style=for-the-badge&logo=apache-tomcat&logoColor=black)
 
-A web-based task management application built with Java Servlets, JSP, and PostgreSQL, designed to help teams organize and track their work efficiently.
+A web-based task management application built with Java Servlets, JSP, and PostgreSQL, designed to help teams organise and track their work efficiently.
 
 ## Features
 
@@ -46,7 +46,7 @@ A web-based task management application built with Java Servlets, JSP, and Postg
 
 ```bash
 # Create database (run in psql)
-CREATE DATABASE taskdb;
+CREATE DATABASE tms;
 
 # Connect and run schema script
 \c tms
@@ -111,10 +111,10 @@ src/
 ```
 
 ## Screenshots
-
-![Task List](screenshots/task-list.png)
 *Task Dashboard with filtering options*
-
-![Task Form](screenshots/task-form.png)
+![Task List](https://github.com/user-attachments/assets/d3a1a68a-7c0f-4e96-8908-59e1c2944770)
+---
 *Task creation/editing form*
+![Task Form](https://github.com/user-attachments/assets/e6cb8d1e-659b-42b2-b0a5-a011d6ab4d00)
+
 
