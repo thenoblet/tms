@@ -163,6 +163,113 @@ body {
     gap: 12px;
 }
 
+/* Add this to your existing CSS */
+
+/* Task Card Hover Effects */
+.task-card {
+    transition: all 0.3s ease;
+    position: relative;
+    border: 1px solid transparent;
+}
+
+.task-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+    border-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Status-specific hover effects */
+.task-card:hover .status-dot.not-started {
+    transform: scale(1.3);
+    box-shadow: 0 0 0 2px rgba(102, 16, 242, 0.2);
+}
+
+.task-card:hover .status-dot.research {
+    transform: scale(1.3);
+    box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.2);
+}
+
+.task-card:hover .status-dot.on-track {
+    transform: scale(1.3);
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
+.task-card:hover .status-dot.in-progress {
+    transform: scale(1.3);
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+}
+
+.task-card:hover .status-dot.complete {
+    transform: scale(1.3);
+    box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.2);
+}
+
+/* Title hover effect */
+.task-card:hover .task-title {
+    color: #007bff;
+}
+
+/* Priority badge hover effects */
+.task-card:hover .priority-badge.high {
+    box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.3);
+}
+
+.task-card:hover .priority-badge.medium {
+    box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.3);
+}
+
+.task-card:hover .priority-badge.low {
+    box-shadow: 0 0 0 2px rgba(108, 117, 125, 0.3);
+}
+
+.task-card:hover .priority-badge.critical {
+    box-shadow: 0 0 0 2px rgba(111, 66, 193, 0.3);
+}
+
+/* Avatar hover effect */
+.task-card:hover .avatar {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Tag hover effect enhancement */
+.task-card:hover .task-tag {
+    transform: translateY(-2px);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Add a subtle scale effect to the entire card */
+.task-card {
+    transform-origin: center bottom;
+}
+
+/* Add transition to status dots and priority badges */
+.status-dot, .priority-badge, .avatar, .task-tag {
+    transition: all 0.2s ease;
+}
+
+/* Optional: Add a slight background color change on hover */
+.task-card:hover {
+    background-color: #f8faff;
+}
+
+/* Add a subtle border effect for completed tasks */
+.task-card[data-status="completed"]:hover {
+    border-left: 3px solid var(--color-completed);
+}
+
+.task-card[data-status="pending"]:hover {
+    border-left: 3px solid var(--color-pending);
+}
+
+.task-card[data-status="progress"]:hover {
+    border-left: 3px solid var(--color-progress);
+}
+
+.task-card[data-status="failed"]:hover {
+    border-left: 3px solid var(--color-failed);
+}
+
 .task-header {
     display: flex;
     justify-content: space-between;
