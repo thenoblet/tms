@@ -5,6 +5,8 @@ import tms.config.DatabaseConfig;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 
 /**
@@ -13,6 +15,8 @@ import java.sql.SQLException;
  * with lazy initialisation and automatic reconnection when closed.
  */
 public class DatabaseConnection {
+    private static final Logger LOGGER = Logger.getLogger(DatabaseConnection.class.getName());
+
     private static DatabaseConnection instance;
     private final Connection connection;
 
@@ -24,6 +28,8 @@ public class DatabaseConnection {
      */
     private DatabaseConnection() throws SQLException {
         try {
+            LOGGER.fine("Initializing new database connection");
+
             Class.forName(DatabaseConfig.getDbDriver());
             this.connection = DriverManager.getConnection(
                     DatabaseConfig.getDbUrl(),
@@ -31,7 +37,11 @@ public class DatabaseConnection {
                     DatabaseConfig.getDbPassword()
             );
         } catch (ClassNotFoundException ex) {
+            LOGGER.log(Level.SEVERE, "Database driver not found: " + DatabaseConfig.getDbDriver(), ex);
             throw new SQLException("Database driver not found", ex);
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Failed to establish database connection", ex);
+            throw new SQLException("Failed to establish database connection", ex);
         }
     }
 
@@ -43,12 +53,19 @@ public class DatabaseConnection {
      * @throws SQLException if database connection fails
      */
     public static DatabaseConnection getInstance() throws SQLException {
-        if (instance == null) {
-            instance = new DatabaseConnection();
-        } else if (instance.getConnection().isClosed()) {
-            instance = new DatabaseConnection();
+        try {
+            if (instance == null) {
+                LOGGER.fine("Creating new DatabaseConnection instance");
+                instance = new DatabaseConnection();
+            } else if (instance.getConnection().isClosed()) {
+                LOGGER.fine("Existing connection closed - creating new instance");
+                instance = new DatabaseConnection();
+            }
+            return instance;
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Failed to establish database connection", ex);
+            throw new SQLException("Failed to establish database connection", ex);
         }
-        return instance;
     }
 
     /**
@@ -56,7 +73,12 @@ public class DatabaseConnection {
      *
      * @return current Connection object
      */
-    public Connection getConnection() {
+    public Connection getConnection() throws SQLException {
+        if (connection == null || connection.isClosed()) {
+            LOGGER.warning("Attempted to get closed/invalid connection");
+        }
+
+        LOGGER.finest("Returning active database connection");
         return connection;
     }
 

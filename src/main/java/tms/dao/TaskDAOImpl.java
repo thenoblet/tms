@@ -6,6 +6,7 @@ import tms.util.DatabaseConnection;
 
 import java.sql.*;
 import java.util.*;
+import java.util.logging.*;
 
 /**
  * Implementation of the TaskDAO interface for database operations related to tasks.
@@ -13,6 +14,7 @@ import java.util.*;
  * Manages task-tag relationships and supports sorting and filtering operations.
  */
 public class TaskDAOImpl implements TaskDAO {
+    private static final Logger LOGGER = Logger.getLogger(TaskDAOImpl.class.getName());
 
     /**
      * Saves a new task to the database including its tags.
@@ -26,6 +28,7 @@ public class TaskDAOImpl implements TaskDAO {
     public Task save(Task task) {
         Connection conn = null;
         try {
+            LOGGER.fine(() -> "Attempting to save task: " + task.getTitle());
             conn = DatabaseConnection.getInstance().getConnection();
             conn.setAutoCommit(false);
 
@@ -40,26 +43,33 @@ public class TaskDAOImpl implements TaskDAO {
 
             int affectedRows = taskStmt.executeUpdate();
             if (affectedRows == 0) {
+                LOGGER.warning("No rows affected when saving task");
                 throw new SQLException("Creating task failed");
             }
 
             try (ResultSet generatedKeys = taskStmt.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
                     task.setId(generatedKeys.getLong(1));
+                    LOGGER.fine(() -> "Generated task ID: " + task.getId());
                 }
             }
 
             if (task.getTags() != null && !task.getTags().isEmpty()) {
+                LOGGER.fine(() -> "Saving " + task.getTags().size() + " tags for task ID: " + task.getId());
                 saveTags(conn, task.getId(), task.getTags());
             }
 
             conn.commit();
+            LOGGER.info(() -> "Successfully saved task ID: " + task.getId() + " with title: " + task.getTitle());
             return task;
         } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Failed to save task", e);
             if (conn != null) {
                 try {
+                    LOGGER.fine("Attempting to rollback transaction");
                     conn.rollback();
                 } catch (SQLException ex) {
+                    LOGGER.log(Level.SEVERE, "Failed to rollback transaction", ex);
                     throw new DataAccessException("Failed to rollback transaction", ex);
                 }
             }
@@ -69,7 +79,7 @@ public class TaskDAOImpl implements TaskDAO {
                 try {
                     conn.setAutoCommit(true);
                 } catch (SQLException e) {
-                    // Ignore
+                    LOGGER.log(Level.WARNING, "Failed to reset auto-commit", e);
                 }
             }
         }
@@ -84,10 +94,13 @@ public class TaskDAOImpl implements TaskDAO {
      * @throws SQLException if database access fails
      */
     private void saveTags(Connection conn, Long taskId, List<String> tags) throws SQLException {
+        LOGGER.finest(() -> "Starting saveTags for task ID: " + taskId);
+
         String deleteSql = "DELETE FROM task_tags WHERE task_id = ?";
         try (PreparedStatement deleteStmt = conn.prepareStatement(deleteSql)) {
             deleteStmt.setLong(1, taskId);
-            deleteStmt.executeUpdate();
+            int deleted = deleteStmt.executeUpdate();
+            LOGGER.finest(() -> "Deleted " + deleted + " existing tag relationships for task ID: " + taskId);
         }
 
         String insertTagSql = "INSERT INTO tags (name) VALUES (?) ON CONFLICT (name) DO NOTHING";
@@ -97,6 +110,8 @@ public class TaskDAOImpl implements TaskDAO {
              PreparedStatement taskTagStmt = conn.prepareStatement(insertTaskTagSql)) {
 
             for (String tagName : tags) {
+                LOGGER.finest(() -> "Processing tag: " + tagName + " for task ID: " + taskId);
+
                 tagStmt.setString(1, tagName);
                 tagStmt.executeUpdate();
 
@@ -104,6 +119,7 @@ public class TaskDAOImpl implements TaskDAO {
                 taskTagStmt.setString(2, tagName);
                 taskTagStmt.executeUpdate();
             }
+            LOGGER.fine(() -> "Successfully saved " + tags.size() + " tags for task ID: " + taskId);
         }
     }
 
@@ -116,6 +132,7 @@ public class TaskDAOImpl implements TaskDAO {
      */
     @Override
     public Task findById(Long id) {
+        LOGGER.fine(() -> "Finding task by ID: " + id);
         String sql = "SELECT t.*, array_agg(tg.name) as tags " +
                 "FROM tasks t " +
                 "LEFT JOIN task_tags tt ON t.id = tt.task_id " +
@@ -130,10 +147,14 @@ public class TaskDAOImpl implements TaskDAO {
             ResultSet rs = stmt.executeQuery();
 
             if (rs.next()) {
-                return mapResultToTask(rs);
+                Task task = mapResultToTask(rs);
+                LOGGER.fine(() -> "Found task ID: " + id + " with title: " + task.getTitle());
+                return task;
             }
+            LOGGER.fine(() -> "No task found with ID: " + id);
             return null;
         } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Failed to find task with ID: " + id, e);
             throw new DataAccessException("Failed to find task with id:" + id, e);
         }
     }
@@ -146,6 +167,7 @@ public class TaskDAOImpl implements TaskDAO {
      */
     @Override
     public List<Task> getTasks() {
+        LOGGER.fine("Retrieving all tasks");
         String sql = "SELECT t.*, array_agg(tg.name) as tags " +
                 "FROM tasks t " +
                 "LEFT JOIN task_tags tt ON t.id = tt.task_id " +
@@ -164,6 +186,7 @@ public class TaskDAOImpl implements TaskDAO {
      */
     @Override
     public List<Task> findByStatus(Task.Status status) {
+        LOGGER.fine(() -> "Finding tasks by status: " + status);
         String sql = "SELECT t.*, array_agg(tg.name) as tags " +
                 "FROM tasks t " +
                 "LEFT JOIN task_tags tt ON t.id = tt.task_id " +
@@ -181,8 +204,10 @@ public class TaskDAOImpl implements TaskDAO {
             while (rs.next()) {
                 tasks.add(mapResultToTask(rs));
             }
+            LOGGER.fine(() -> "Found " + tasks.size() + " tasks with status: " + status);
             return tasks;
         } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Failed to find tasks by status: " + status, e);
             throw new DataAccessException("Failed to find tasks by status:" + status, e);
         }
     }
@@ -196,6 +221,7 @@ public class TaskDAOImpl implements TaskDAO {
      */
     @Override
     public List<Task> findAllSortedByDueDate(boolean ascending) {
+        LOGGER.fine(() -> "Finding all tasks sorted by due date (" + (ascending ? "ASC" : "DESC") + ")");
         String sql = "SELECT t.*, array_agg(tg.name) as tags " +
                 "FROM tasks t " +
                 "LEFT JOIN task_tags tt ON t.id = tt.task_id " +
@@ -212,8 +238,10 @@ public class TaskDAOImpl implements TaskDAO {
             while (rs.next()) {
                 tasks.add(mapResultToTask(rs));
             }
+            LOGGER.fine(() -> "Found " + tasks.size() + " sorted tasks");
             return tasks;
         } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Failed to sort tasks", e);
             throw new DataAccessException("Failed to sort tasks", e);
         }
     }
@@ -226,6 +254,7 @@ public class TaskDAOImpl implements TaskDAO {
      * @throws DataAccessException if database access fails
      */
     private List<Task> getTasksByQuery(String sql) {
+        LOGGER.finest(() -> "Executing query: " + sql);
         try (Connection conn = DatabaseConnection.getInstance().getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
@@ -235,8 +264,10 @@ public class TaskDAOImpl implements TaskDAO {
             while (rs.next()) {
                 tasks.add(mapResultToTask(rs));
             }
+            LOGGER.fine(() -> "Retrieved " + tasks.size() + " tasks from query");
             return tasks;
         } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Failed to get tasks by query", e);
             throw new DataAccessException("Failed to get tasks", e);
         }
     }
@@ -250,6 +281,7 @@ public class TaskDAOImpl implements TaskDAO {
      */
     @Override
     public void update(Task task) {
+        LOGGER.fine(() -> "Updating task ID: " + task.getId());
         Connection conn = null;
         try {
             conn = DatabaseConnection.getInstance().getConnection();
@@ -263,19 +295,25 @@ public class TaskDAOImpl implements TaskDAO {
                 taskStmt.setDate(4, new java.sql.Date(task.getDueDate().getTime()));
                 taskStmt.setString(5, task.getStatus().name());
                 taskStmt.setLong(6, task.getId());
-                taskStmt.executeUpdate();
+                int updated = taskStmt.executeUpdate();
+                LOGGER.fine(() -> "Updated " + updated + " task records for ID: " + task.getId() + ", title: " + task.getTitle());
             }
 
             if (task.getTags() != null) {
+                LOGGER.fine(() -> "Updating " + task.getTags().size() + " tags for task ID: " + task.getId());
                 saveTags(conn, task.getId(), task.getTags());
             }
 
             conn.commit();
+            LOGGER.info(() -> "Successfully updated task ID: " + task.getId());
         } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Failed to update task ID: " + task.getId(), e);
             if (conn != null) {
                 try {
+                    LOGGER.fine("Attempting to rollback transaction");
                     conn.rollback();
                 } catch (SQLException ex) {
+                    LOGGER.log(Level.SEVERE, "Failed to rollback transaction", ex);
                     throw new DataAccessException("Failed to rollback transaction", ex);
                 }
             }
@@ -285,7 +323,7 @@ public class TaskDAOImpl implements TaskDAO {
                 try {
                     conn.setAutoCommit(true);
                 } catch (SQLException e) {
-                    // Ignore
+                    LOGGER.log(Level.WARNING, "Failed to reset auto-commit", e);
                 }
             }
         }
@@ -300,14 +338,21 @@ public class TaskDAOImpl implements TaskDAO {
      */
     @Override
     public void delete(Long id) {
+        LOGGER.fine(() -> "Deleting task ID: " + id);
         String sql = "DELETE FROM tasks WHERE id = ?";
 
         try (Connection conn = DatabaseConnection.getInstance().getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setLong(1, id);
-            stmt.executeUpdate();
+            int deleted = stmt.executeUpdate();
+            if (deleted > 0) {
+                LOGGER.info(() -> "Successfully deleted task ID: " + id);
+            } else {
+                LOGGER.warning(() -> "No task found to delete with ID: " + id);
+            }
         } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Failed to delete task ID: " + id, e);
             throw new DataAccessException("Failed to delete task with id:" + id, e);
         }
     }
@@ -340,6 +385,7 @@ public class TaskDAOImpl implements TaskDAO {
             task.setTags(Collections.emptyList());
         }
 
+        LOGGER.finest(() -> "Mapped ResultSet to Task: " + task.getId());
         return task;
     }
 }
